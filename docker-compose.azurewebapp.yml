@@ -1,0 +1,77 @@
+version: "3"
+services:
+  
+  front:
+    image: thecodingmachine/nodejs:14
+    environment:
+      HOST: "0.0.0.0"
+      API_URL: pusher.workadventure.childgrowthmonitor.org
+      UPLOADER_URL: uploader.workadventure.childgrowthmonitor.org
+      ADMIN_URL: admin.workadventure.childgrowthmonitor.org
+      STARTUP_COMMAND_1: yarn install
+      TURN_SERVER: "turn:coturn.workadventu.re:443,turns:coturn.workadventu.re:443"
+      TURN_USER: workadventure
+      TURN_PASSWORD: WorkAdventure123
+    command: yarn run start
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/front:/usr/src/app
+
+  pusher:
+    image: thecodingmachine/nodejs:12
+    command: yarn prod
+    environment:
+      DEBUG: "*"
+      STARTUP_COMMAND_1: yarn install
+      API_URL: back:50051
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/pusher:/usr/src/app
+
+  maps:
+    image: thecodingmachine/nodejs:12-apache
+    environment:
+      HOST: "0.0.0.0"
+      NODE_ENV: development
+      STARTUP_COMMAND_0: sudo a2enmod headers
+      STARTUP_COMMAND_1: yarn install
+      STARTUP_COMMAND_2: yarn run dev &
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/maps:/var/www/html
+
+  back:
+    image: thecodingmachine/nodejs:12
+    command: yarn dev
+    environment:
+      DEBUG: "*"
+      STARTUP_COMMAND_1: yarn install
+      ALLOW_ARTILLERY: "true"
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/back:/usr/src/app
+
+  uploader:
+    image: thecodingmachine/nodejs:12
+    command: yarn dev
+    environment:
+      DEBUG: "*"
+      STARTUP_COMMAND_1: yarn install
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/uploader:/usr/src/app
+
+  website:
+    image: thecodingmachine/nodejs:12-apache
+    environment:
+      STARTUP_COMMAND_1: npm install
+      STARTUP_COMMAND_2: npm run watch &
+      APACHE_DOCUMENT_ROOT: dist/
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/website:/var/www/html
+
+  messages:
+    image: thecodingmachine/workadventure-back-base:latest
+    environment:
+      STARTUP_COMMAND_1: yarn install
+      STARTUP_COMMAND_2: yarn run proto:watch
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/messages:/usr/src/app
+      - ${WEBAPP_STORAGE_HOME}/back:/usr/src/back
+      - ${WEBAPP_STORAGE_HOME}/front:/usr/src/front
+      - ${WEBAPP_STORAGE_HOME}/pusher:/usr/src/pusher
